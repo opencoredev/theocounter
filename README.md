@@ -1,65 +1,81 @@
 # theocounter.com
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Start, Convex, and more.
+*How long has it been since Theo posted? Too long. Probably.*
+
+A live website tracking the time since [t3dotgg](https://youtube.com/@t3dotgg) last uploaded to YouTube. It polls every minute, shows a dramatic countdown, logs every drought in history, and emails you the moment he's back.
+
+Open source. Dark mode only. Built for fun.
+
+---
 
 ## Features
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Start** - SSR framework with TanStack Router
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **shadcn/ui** - Reusable UI components
-- **Convex** - Reactive backend-as-a-service platform
-- **Oxlint** - Oxlint + Oxfmt (linting & formatting)
-- **Turborepo** - Optimized monorepo build system
+- Live counter (days / hrs / min / sec) since last upload
+- Latest 3 video thumbnails with titles
+- History page ranking every drought by length
+- Email signup with double opt-in confirmation
+- Live viewer count showing who else is suffering with you
 
-## Getting Started
+## Stack
 
-First, install the dependencies:
+- **Frontend**: React + TanStack Start (SSR), TailwindCSS, Vercel
+- **Backend**: Convex (realtime DB, serverless functions, cron jobs)
+- **Email**: Resend
+- **Spam protection**: Cloudflare Turnstile
+- **Analytics**: OneDollarStats
+- **Monorepo**: Turborepo + Bun
 
-```bash
-bun install
-```
-
-## Convex Setup
-
-This project uses Convex as a backend. You'll need to set up Convex before running the app:
-
-```bash
-bun run dev:setup
-```
-
-Follow the prompts to create a new Convex project and connect it to your application.
-
-Copy environment variables from `packages/backend/.env.local` to `apps/*/.env`.
-
-Then, run the development server:
-
-```bash
-bun run dev
-```
-
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-Your app will connect to the Convex cloud backend automatically.
-
-## Git Hooks and Formatting
-
-- Format and lint fix: `bun run check`
-
-## Project Structure
+## Project structure
 
 ```
 theocounter.com/
-├── apps/
-│   ├── web/         # Frontend application (React + TanStack Start)
-├── packages/
-│   ├── backend/     # Convex backend functions and schema
+├── apps/web/          # React frontend (TanStack Start)
+└── packages/backend/  # Convex backend (functions, schema, crons)
 ```
 
-## Available Scripts
+## Running locally
 
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
-- `bun run dev:setup`: Setup and configure your Convex project
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run check`: Run Oxlint and Oxfmt
+You'll need Bun and a Convex account.
+
+```bash
+git clone https://github.com/opencoredev/theocounter
+cd theocounter.com
+bun install
+bun run dev:setup   # sets up your Convex dev deployment
+bun run dev
+```
+
+Add these to `apps/web/.env.local`:
+
+```
+VITE_CONVEX_URL=https://<your-dev-deployment>.convex.cloud
+VITE_TURNSTILE_SITE_KEY=<your-key>
+```
+
+Set Convex env vars via `bunx convex env set`:
+
+```
+YOUTUBE_API_KEY
+RESEND_API_KEY
+RESEND_AUDIENCE_ID
+TURNSTILE_SECRET_KEY
+```
+
+## Deploying
+
+Frontend deploys to Vercel:
+
+```bash
+bunx vercel --prod
+```
+
+Backend deploys to Convex from `packages/backend/`:
+
+```bash
+bunx convex deploy
+```
+
+## Contributing
+
+PRs welcome. Keep it simple, keep it dark.
+
