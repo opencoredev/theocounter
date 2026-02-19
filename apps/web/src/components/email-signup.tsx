@@ -52,9 +52,9 @@ export function EmailSignup() {
   if (status === "success") {
     return (
       <div className="text-center py-4">
-        <p className="text-sm font-mono text-primary">You&apos;re in! 🎉</p>
+        <p className="text-sm font-mono text-primary">check your email</p>
         <p className="text-xs font-mono text-white/30 mt-1">
-          We&apos;ll notify you when Theo posts.
+          we sent you a confirmation link. click it and you&apos;re in.
         </p>
       </div>
     );
