@@ -1,0 +1,3 @@
+{
+  "extends": "@theocounter.com/config/tsconfig.base.json"
+}

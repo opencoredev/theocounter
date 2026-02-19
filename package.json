@@ -1,0 +1,41 @@
+{
+  "name": "theocounter.com",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalog": {
+      "dotenv": "^17.2.2",
+      "zod": "^4.1.13",
+      "typescript": "^5",
+      "convex": "^1.31.2"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F @theocounter.com/backend dev",
+    "dev:setup": "turbo -F @theocounter.com/backend dev:setup",
+    "check": "oxlint && oxfmt --write",
+    "backfill": "bun run scripts/backfill.ts"
+  },
+  "dependencies": {
+    "@theocounter.com/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@theocounter.com/config": "workspace:*",
+    "oxfmt": "^0.19.0",
+    "oxlint": "^1.34.0",
+    "turbo": "^2.8.9",
+    "typescript": "catalog:"
+  },
+  "packageManager": "bun@1.3.5"
+}
