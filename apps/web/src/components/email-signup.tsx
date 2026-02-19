@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useAction } from "convex/react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { api } from "@theocounter.com/backend/convex/_generated/api";
+import { track } from "@/lib/analytics";
 
 export function EmailSignup() {
   const subscribe = useAction(api.subscribers.subscribe);
@@ -17,6 +18,7 @@ export function EmailSignup() {
     setStatus("loading");
     try {
       await subscribe({ email, turnstileToken: t });
+      track("signup");
       setStatus("success");
       setEmail("");
       setToken(null);

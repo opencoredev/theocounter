@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 export function Navbar() {
   return (
@@ -7,12 +8,13 @@ export function Navbar() {
       <Link
         to="/"
         className="text-sm font-mono text-white/40 tracking-widest uppercase hover:text-white/60 transition-colors flex-1"
+        onClick={() => track("nav_home")}
       >
         theocounter
       </Link>
-      <NavLink to="/about">About</NavLink>
+      <NavLink to="/about" event="nav_about">About</NavLink>
       <div className="flex-1 flex justify-end">
-        <NavLink to="/history">History</NavLink>
+        <NavLink to="/history" event="nav_history">History</NavLink>
       </div>
     </nav>
   );
@@ -20,9 +22,11 @@ export function Navbar() {
 
 function NavLink({
   to,
+  event,
   children,
 }: {
   to: string;
+  event: string;
   children: React.ReactNode;
 }) {
   return (
@@ -34,6 +38,7 @@ function NavLink({
       activeProps={{
         className: "text-primary",
       }}
+      onClick={() => track(event)}
     >
       {children}
     </Link>

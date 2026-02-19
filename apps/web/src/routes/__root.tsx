@@ -46,6 +46,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script defer src="https://assets.onedollarstats.com/stonks.js" />
       </head>
       <body>
         <noscript>This site requires JavaScript to work.</noscript>
