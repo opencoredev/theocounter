@@ -1,0 +1,5 @@
+{
+  "buildCommand": "NITRO_PRESET=vercel bun run build && mkdir -p .vercel && cp -r apps/web/.vercel/output .vercel/",
+  "installCommand": "bun install",
+  "framework": null
+}
