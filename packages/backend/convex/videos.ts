@@ -10,20 +10,6 @@ export const getLatestVideo = query({
   },
 });
 
-export const getStats = query({
-  handler: async (ctx) => {
-    const subscribers = await ctx.db.query("subscribers").collect();
-    const subscriberCount = subscribers.length;
-
-    const longestDrought = await ctx.db.query("droughts")
-      .withIndex("by_durationMs")
-      .order("desc")
-      .first();
-    const longestDroughtMs = longestDrought?.durationMs ?? 0;
-
-    return { subscriberCount, longestDroughtMs };
-  },
-});
 
 export const getDroughts = query({
   handler: async (ctx) => {

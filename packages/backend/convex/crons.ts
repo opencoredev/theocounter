@@ -9,4 +9,10 @@ crons.interval(
   internal.youtube.checkForNewVideo,
 );
 
+crons.interval(
+  "cleanup stale presence",
+  { minutes: 2 },
+  internal.presence.deleteStale,
+);
+
 export default crons;

@@ -90,14 +90,22 @@ export const subscribe = action({
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
     if (!turnstileSecret) throw new Error("Server configuration error");
 
-    const verifyRes = await fetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ secret: turnstileSecret, response: args.turnstileToken }),
-      },
-    );
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10_000);
+    let verifyRes: Response;
+    try {
+      verifyRes = await fetch(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret: turnstileSecret, response: args.turnstileToken }),
+          signal: controller.signal,
+        },
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
     const verifyData = (await verifyRes.json()) as { success: boolean; "error-codes"?: string[] };
     if (!verifyData.success) {
       console.error("Turnstile failed:", verifyData["error-codes"]);
@@ -128,7 +136,7 @@ export const subscribe = action({
       tokenExpiresAt,
     });
 
-    await ctx.runAction(internal.emails.sendConfirmationEmail, {
+    await ctx.scheduler.runAfter(0, internal.emails.sendConfirmationEmail, {
       email: args.email,
       token,
     });
@@ -156,6 +164,8 @@ export const confirmSubscription = action({
       const resendKey = process.env.RESEND_API_KEY;
       const audienceId = process.env.RESEND_AUDIENCE_ID;
       if (resendKey && audienceId) {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 10_000);
         await fetch(`https://api.resend.com/audiences/${audienceId}/contacts`, {
           method: "POST",
           headers: {
@@ -163,7 +173,8 @@ export const confirmSubscription = action({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ email: subscriber.email }),
-        });
+          signal: ctrl.signal,
+        }).finally(() => clearTimeout(tid));
       }
     } catch (_) {}
 

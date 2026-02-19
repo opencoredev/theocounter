@@ -40,6 +40,12 @@ function buildConfirmationEmailHtml(confirmUrl: string): string {
 </html>`;
 }
 
+function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 15_000): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
+}
+
 export const sendConfirmationEmail = internalAction({
   args: { email: v.string(), token: v.string() },
   returns: v.null(),
@@ -53,22 +59,28 @@ export const sendConfirmationEmail = internalAction({
     const confirmUrl = `https://theocounter.com/confirm?token=${args.token}`;
     const html = buildConfirmationEmailHtml(confirmUrl);
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Theo Counter <notifications@theocounter.com>",
-        to: args.email,
-        subject: "confirm your theocounter subscription",
-        html,
-      }),
-    });
+    try {
+      const res = await fetchWithTimeout("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Theo Counter <notifications@theocounter.com>",
+          to: args.email,
+          subject: "confirm your theocounter subscription",
+          html,
+        }),
+      });
 
-    if (!res.ok) {
-      console.error(`Confirmation email failed: ${res.status} ${await res.text()}`);
+      if (!res.ok) {
+        console.error(`Confirmation email failed: ${res.status} ${await res.text()}`);
+      } else {
+        console.info(`Confirmation email sent to ${args.email}`);
+      }
+    } catch (err) {
+      console.error("Confirmation email fetch error:", err);
     }
 
     return null;
@@ -172,7 +184,7 @@ export const sendNewVideoBroadcast = internalAction({
       subscriberCount,
     });
 
-    const res = await fetch("https://api.resend.com/broadcasts", {
+    const createRes = await fetchWithTimeout("https://api.resend.com/broadcasts", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${resendKey}`,
@@ -180,18 +192,35 @@ export const sendNewVideoBroadcast = internalAction({
       },
       body: JSON.stringify({
         name: `New Video: ${args.title}`,
-        audienceId,
+        audience_id: audienceId,
         from: "Theo Counter <notifications@theocounter.com>",
         subject: `Theo Posted: ${args.title}`,
         html,
       }),
     });
 
-    if (!res.ok) {
-      const err = await res.text();
-      console.error(`Resend broadcast failed: ${res.status} — ${err}`);
+    if (!createRes.ok) {
+      const errText = await createRes.text();
+      console.error(`Resend broadcast create failed: ${createRes.status} — ${errText}`);
+      return;
+    }
+
+    const { id: broadcastId } = (await createRes.json()) as { id: string };
+
+    const sendRes = await fetchWithTimeout(`https://api.resend.com/broadcasts/${broadcastId}/send`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+
+    if (!sendRes.ok) {
+      const errText = await sendRes.text();
+      console.error(`Resend broadcast send failed: ${sendRes.status} — ${errText}`);
     } else {
-      console.info(`Broadcast sent for video: ${args.title}`);
+      console.info(`Broadcast created (${broadcastId}) and sent for video: ${args.title}`);
     }
   },
 });
