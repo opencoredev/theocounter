@@ -10,9 +10,9 @@ export function Navbar() {
       >
         theocounter
       </Link>
-      <NavLink to="/">Counter</NavLink>
+      <NavLink to="/about">About</NavLink>
       <div className="flex-1 flex justify-end">
-        <NavLink to="/droughts">Droughts</NavLink>
+        <NavLink to="/history">History</NavLink>
       </div>
     </nav>
   );
