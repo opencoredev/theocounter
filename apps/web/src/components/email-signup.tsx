@@ -1,10 +1,9 @@
 import { useRef, useState } from "react";
-import { useAction, useQuery } from "convex/react";
+import { useAction } from "convex/react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { api } from "@theocounter.com/backend/convex/_generated/api";
 
 export function EmailSignup() {
-  const subscriberCount = useQuery(api.subscribers.getCount);
   const subscribe = useAction(api.subscribers.subscribe);
   const turnstileRef = useRef<TurnstileInstance>(null);
   const pendingSubmit = useRef(false);
@@ -80,12 +79,6 @@ export function EmailSignup() {
           {status === "loading" ? "..." : "Notify me"}
         </button>
       </form>
-
-      {subscriberCount !== undefined && subscriberCount > 0 && (
-        <p className="text-xs font-mono text-white/20 text-center">
-          {subscriberCount.toLocaleString()} {subscriberCount === 1 ? "person" : "people"} watching
-        </p>
-      )}
 
       {status === "error" && (
         <p className="text-xs font-mono text-destructive">{errorMessage}</p>
