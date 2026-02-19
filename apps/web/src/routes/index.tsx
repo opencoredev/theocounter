@@ -78,17 +78,7 @@ function HomePage() {
             onShowCounter={() => setShowCounter(true)}
           />
         ) : (
-          <div className="w-full flex flex-col items-center gap-6">
-            <Counter />
-            {isRecent && (
-              <button
-                onClick={() => setShowCounter(false)}
-                className="text-xs font-mono text-white/20 hover:text-white/50 transition-colors"
-              >
-                ← he posted! back to celebration
-              </button>
-            )}
-          </div>
+          <Counter />
         )}
       </div>
 
