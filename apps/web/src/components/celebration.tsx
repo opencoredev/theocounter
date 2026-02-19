@@ -43,6 +43,10 @@ export function Celebration({
       setTimeout(() => fire({ particleCount: 80, spread: 100, origin: { y: 0.5, x: 0.2 } }), 200);
       setTimeout(() => fire({ particleCount: 80, spread: 100, origin: { y: 0.5, x: 0.8 } }), 400);
     }
+
+    const autoTransition = setTimeout(onShowCounter, 5000);
+    return () => clearTimeout(autoTransition);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [video.videoId]);
 
   const droughtText =

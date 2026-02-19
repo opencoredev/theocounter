@@ -5,7 +5,7 @@ const crons = cronJobs();
 
 crons.interval(
   "check youtube",
-  { minutes: 1 },
+  { seconds: 30 },
   internal.youtube.checkForNewVideo,
 );
 
