@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
+import { useState } from "react";
 import { api } from "@theocounter.com/backend/convex/_generated/api";
 import { Counter } from "@/components/counter";
 import { Celebration } from "@/components/celebration";
@@ -26,6 +27,7 @@ function HomePage() {
   const droughts = useQuery(api.videos.getDroughts);
   const viewerCount = useQuery(api.presence.getViewerCount);
   const latestVideos = useQuery(api.videos.getLatestVideos);
+  const [showCounter, setShowCounter] = useState(false);
 
   if (latestVideo === undefined) {
     return (
@@ -64,7 +66,7 @@ function HomePage() {
   return (
     <div className="flex-1 flex flex-col justify-between py-8 sm:py-12 px-6 sm:px-10">
       <div className="flex-1 flex items-center justify-center">
-        {isRecent ? (
+        {isRecent && !showCounter ? (
           <Celebration
             video={{
               videoId: latestVideo.videoId,
@@ -73,9 +75,20 @@ function HomePage() {
               publishedAt: latestVideo.publishedAt,
             }}
             droughtDurationMs={mostRecentDroughtMs}
+            onShowCounter={() => setShowCounter(true)}
           />
         ) : (
-          <Counter />
+          <div className="w-full flex flex-col items-center gap-6">
+            <Counter />
+            {isRecent && (
+              <button
+                onClick={() => setShowCounter(false)}
+                className="text-xs font-mono text-white/20 hover:text-white/50 transition-colors"
+              >
+                ← he posted! back to celebration
+              </button>
+            )}
+          </div>
         )}
       </div>
 

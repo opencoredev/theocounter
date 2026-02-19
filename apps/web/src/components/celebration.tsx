@@ -25,9 +25,11 @@ function formatDuration(ms: number): string {
 export function Celebration({
   video,
   droughtDurationMs,
+  onShowCounter,
 }: {
   video: Video;
   droughtDurationMs: number;
+  onShowCounter: () => void;
 }) {
   useEffect(() => {
     const lastSeenVideoId = localStorage.getItem("lastSeenVideoId");
@@ -74,6 +76,14 @@ export function Celebration({
       >
         Watch on YouTube →
       </a>
+      <div className="mt-8 pt-6 border-t border-white/[0.06]">
+        <button
+          onClick={onShowCounter}
+          className="text-xs font-mono text-white/20 hover:text-white/50 transition-colors"
+        >
+          see how long it's been since last video →
+        </button>
+      </div>
     </div>
   );
 }
