@@ -25,7 +25,12 @@ export default defineSchema({
   subscribers: defineTable({
     email: v.string(),
     subscribedAt: v.number(),
-  }).index("by_email", ["email"]),
+    confirmed: v.optional(v.boolean()),
+    confirmationToken: v.optional(v.string()),
+    tokenExpiresAt: v.optional(v.number()),
+  })
+    .index("by_email", ["email"])
+    .index("by_confirmationToken", ["confirmationToken"]),
 
   presence: defineTable({
     visitorId: v.string(),
