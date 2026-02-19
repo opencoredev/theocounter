@@ -13,7 +13,17 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'theocounter' },
+      { title: 'theocounter — how long since Theo posted?' },
+      { name: 'description', content: 'A live counter tracking how long it\'s been since Theo (t3.gg) last posted on YouTube.' },
+      { property: 'og:title', content: 'theocounter — how long since Theo posted?' },
+      { property: 'og:description', content: 'A live counter tracking how long it\'s been since Theo (t3.gg) last posted on YouTube.' },
+      { property: 'og:image', content: 'https://theocounter.com/og-img.png' },
+      { property: 'og:url', content: 'https://theocounter.com' },
+      { property: 'og:type', content: 'website' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: 'theocounter — how long since Theo posted?' },
+      { name: 'twitter:description', content: 'A live counter tracking how long it\'s been since Theo (t3.gg) last posted on YouTube.' },
+      { name: 'twitter:image', content: 'https://theocounter.com/og-img.png' },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
