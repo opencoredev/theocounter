@@ -90,16 +90,19 @@ export const subscribe = action({
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
     if (!turnstileSecret) throw new Error("Server configuration error");
 
-    const formData = new FormData();
-    formData.append("secret", turnstileSecret);
-    formData.append("response", args.turnstileToken);
-
     const verifyRes = await fetch(
       "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      { method: "POST", body: formData },
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secret: turnstileSecret, response: args.turnstileToken }),
+      },
     );
-    const verifyData = (await verifyRes.json()) as { success: boolean };
-    if (!verifyData.success) throw new Error("Verification failed. Please try again.");
+    const verifyData = (await verifyRes.json()) as { success: boolean; "error-codes"?: string[] };
+    if (!verifyData.success) {
+      console.error("Turnstile failed:", verifyData["error-codes"]);
+      throw new Error("Verification failed. Please try again.");
+    }
 
     const existing = await ctx.runQuery(internal.subscribers.getByEmail, {
       email: args.email,

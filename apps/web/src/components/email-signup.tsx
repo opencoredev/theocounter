@@ -92,7 +92,16 @@ export function EmailSignup() {
         options={{ execution: "render", appearance: "interaction-only" }}
         onSuccess={handleTurnstileSuccess}
         onExpire={() => { setToken(null); turnstileRef.current?.reset(); }}
-        onError={() => { setToken(null); turnstileRef.current?.reset(); }}
+        onError={() => {
+          setToken(null);
+          if (pendingSubmit.current) {
+            pendingSubmit.current = false;
+            setStatus("error");
+            setErrorMessage("Security check failed. Please refresh and try again.");
+          } else {
+            turnstileRef.current?.reset();
+          }
+        }}
       />
     </div>
   );
