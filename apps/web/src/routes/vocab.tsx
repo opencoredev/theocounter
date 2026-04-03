@@ -35,6 +35,11 @@ function VocabPage() {
   const [search, setSearch] = useState("");
   const stats = useQuery(api.vocab.getVocabStats);
   const topWords = useQuery(api.vocab.getTopWordsSimple, { limit: 200 });
+  // DEBUG: test if any Convex query works from this page
+  const latestVideo = useQuery(api.videos.getLatestVideo);
+  if (typeof window !== "undefined") {
+    console.log("[VOCAB_TEST] video=" + (latestVideo?.title ?? "loading") + " vocabWords=" + (topWords === undefined ? "loading" : topWords.length));
+  }
 
   const searchResults = useQuery(
     api.vocab.searchWords,
