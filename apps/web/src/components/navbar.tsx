@@ -4,18 +4,22 @@ import { track } from "@/lib/analytics";
 
 export function Navbar() {
   return (
-    <nav className="px-8 py-6 flex items-center justify-between">
+    <nav className="px-6 sm:px-8 py-6 flex items-center gap-4">
       <Link
         to="/"
-        className="text-sm font-mono text-white/40 tracking-widest uppercase hover:text-white/60 transition-colors flex-1"
+        className="text-sm font-mono text-white/40 tracking-widest uppercase hover:text-white/60 transition-colors"
         onClick={() => track("nav_home")}
       >
         theocounter
       </Link>
-      <NavLink to="/about" event="nav_about">About</NavLink>
-      <div className="flex-1 flex justify-end items-center gap-4">
+
+      <div className="flex-1 flex items-center justify-center gap-6 sm:gap-8">
+        <NavLink to="/about" event="nav_about">About</NavLink>
         <NavLink to="/vocab" event="nav_vocab">Vocab</NavLink>
         <NavLink to="/history" event="nav_history">History</NavLink>
+      </div>
+
+      <div className="flex items-center gap-3">
         <a
           href="https://x.com/leodev"
           target="_blank"
