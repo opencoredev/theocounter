@@ -6,7 +6,10 @@ import { usePresence } from '@/hooks/use-presence'
 
 import appCss from '../styles.css?url'
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
+const convex = new ConvexReactClient(
+  import.meta.env.VITE_CONVEX_URL as string ||
+    "https://amiable-marmot-44.convex.cloud",
+);
 
 export const Route = createRootRoute({
   head: () => ({
