@@ -38,4 +38,29 @@ export default defineSchema({
   })
     .index("by_visitorId", ["visitorId"])
     .index("by_lastSeen", ["lastSeen"]),
+
+  transcripts: defineTable({
+    videoId: v.string(),
+    text: v.optional(v.string()),
+    status: v.string(),
+    processedAt: v.number(),
+  }).index("by_videoId", ["videoId"]),
+
+  vocabWords: defineTable({
+    word: v.string(),
+    totalCount: v.number(),
+    videoCount: v.number(),
+  })
+    .index("by_word", ["word"])
+    .index("by_totalCount", ["totalCount"])
+    .searchIndex("search_word", { searchField: "word" }),
+
+  vocabMeta: defineTable({
+    totalChannelVideos: v.number(),
+    totalVideosProcessed: v.number(),
+    totalVideosWithTranscripts: v.number(),
+    totalUniqueWords: v.number(),
+    totalWordOccurrences: v.number(),
+    lastUpdatedAt: v.number(),
+  }),
 });

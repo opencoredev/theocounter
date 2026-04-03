@@ -46,6 +46,23 @@ export const seedInitialData = internalMutation({
   },
 });
 
+export const clearTranscripts = internalMutation({
+  args: { table: v.optional(v.string()) },
+  handler: async (ctx, { table }) => {
+    const target = table ?? "transcripts";
+    let count = 0;
+    // Delete in small batches to stay under byte limits
+    const batch = await ctx.db
+      .query(target as "transcripts" | "vocabWords" | "vocabMeta")
+      .take(100);
+    for (const doc of batch) {
+      await ctx.db.delete(doc._id);
+      count++;
+    }
+    return { cleared: count, hasMore: batch.length === 100 };
+  },
+});
+
 export const simulateNewVideo = internalAction({
   args: {
     videoId: v.string(),

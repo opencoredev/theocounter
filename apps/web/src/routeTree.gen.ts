@@ -9,19 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VocabRouteImport } from './routes/vocab'
 import { Route as HistoryRouteImport } from './routes/history'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as ConfirmRouteImport } from './routes/confirm'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiFetchTranscriptVideoIdRouteImport } from './routes/api.fetch-transcript.$videoId'
 
+const VocabRoute = VocabRouteImport.update({
+  id: '/vocab',
+  path: '/vocab',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfirmRoute = ConfirmRouteImport.update({
@@ -29,60 +31,98 @@ const ConfirmRoute = ConfirmRouteImport.update({
   path: '/confirm',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiFetchTranscriptVideoIdRoute =
+  ApiFetchTranscriptVideoIdRouteImport.update({
+    id: '/api/fetch-transcript/$videoId',
+    path: '/api/fetch-transcript/$videoId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/history': typeof HistoryRoute
   '/about': typeof AboutRoute
   '/confirm': typeof ConfirmRoute
+  '/history': typeof HistoryRoute
+  '/vocab': typeof VocabRoute
+  '/api/fetch-transcript/$videoId': typeof ApiFetchTranscriptVideoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/history': typeof HistoryRoute
   '/about': typeof AboutRoute
   '/confirm': typeof ConfirmRoute
+  '/history': typeof HistoryRoute
+  '/vocab': typeof VocabRoute
+  '/api/fetch-transcript/$videoId': typeof ApiFetchTranscriptVideoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/history': typeof HistoryRoute
   '/about': typeof AboutRoute
   '/confirm': typeof ConfirmRoute
+  '/history': typeof HistoryRoute
+  '/vocab': typeof VocabRoute
+  '/api/fetch-transcript/$videoId': typeof ApiFetchTranscriptVideoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/history' | '/about' | '/confirm'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/confirm'
+    | '/history'
+    | '/vocab'
+    | '/api/fetch-transcript/$videoId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/history' | '/about' | '/confirm'
-  id: '__root__' | '/' | '/history' | '/about' | '/confirm'
+  to:
+    | '/'
+    | '/about'
+    | '/confirm'
+    | '/history'
+    | '/vocab'
+    | '/api/fetch-transcript/$videoId'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/confirm'
+    | '/history'
+    | '/vocab'
+    | '/api/fetch-transcript/$videoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  HistoryRoute: typeof HistoryRoute
   AboutRoute: typeof AboutRoute
   ConfirmRoute: typeof ConfirmRoute
+  HistoryRoute: typeof HistoryRoute
+  VocabRoute: typeof VocabRoute
+  ApiFetchTranscriptVideoIdRoute: typeof ApiFetchTranscriptVideoIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vocab': {
+      id: '/vocab'
+      path: '/vocab'
+      fullPath: '/vocab'
+      preLoaderRoute: typeof VocabRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/history': {
       id: '/history'
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/confirm': {
@@ -92,6 +132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfirmRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -99,14 +146,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/fetch-transcript/$videoId': {
+      id: '/api/fetch-transcript/$videoId'
+      path: '/api/fetch-transcript/$videoId'
+      fullPath: '/api/fetch-transcript/$videoId'
+      preLoaderRoute: typeof ApiFetchTranscriptVideoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  HistoryRoute: HistoryRoute,
   AboutRoute: AboutRoute,
   ConfirmRoute: ConfirmRoute,
+  HistoryRoute: HistoryRoute,
+  VocabRoute: VocabRoute,
+  ApiFetchTranscriptVideoIdRoute: ApiFetchTranscriptVideoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

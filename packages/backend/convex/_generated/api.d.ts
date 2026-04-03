@@ -16,6 +16,7 @@ import type * as seed from "../seed.js";
 import type * as subscribers from "../subscribers.js";
 import type * as testing from "../testing.js";
 import type * as videos from "../videos.js";
+import type * as vocab from "../vocab.js";
 import type * as youtube from "../youtube.js";
 
 import type {
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   subscribers: typeof subscribers;
   testing: typeof testing;
   videos: typeof videos;
+  vocab: typeof vocab;
   youtube: typeof youtube;
 }>;
 

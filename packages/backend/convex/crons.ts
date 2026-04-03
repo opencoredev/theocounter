@@ -15,4 +15,13 @@ crons.interval(
   internal.presence.deleteStale,
 );
 
+// Transcript processing is handled by local/CI scripts since YouTube
+// blocks cloud server IPs. The cron will be re-enabled once a working
+// proxy is available.
+// crons.interval(
+//   "process video transcripts",
+//   { minutes: 2 },
+//   internal.vocab.processUnprocessedVideos,
+// );
+
 export default crons;
