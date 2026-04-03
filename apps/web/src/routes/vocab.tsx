@@ -36,10 +36,6 @@ function VocabPage() {
   const stats = useQuery(api.vocab.getVocabStats);
   const topWords = useQuery(api.vocab.getTopWordsSimple, { limit: 200 });
 
-  // DEBUG
-  if (typeof window !== "undefined") {
-    console.log("[VOCAB] stats=" + JSON.stringify(stats === undefined ? "loading" : !!stats) + " words=" + (topWords === undefined ? "loading" : topWords.length) + " first=" + (topWords?.[0]?.word ?? "none"));
-  }
   const searchResults = useQuery(
     api.vocab.searchWords,
     search.length >= 2 ? { searchTerm: search } : "skip",
