@@ -8,11 +8,9 @@
  *   bun scripts/fetch-transcripts.ts 200       # Process 200 videos
  */
 
-import { $ } from "bun";
-import { resolve } from "path";
-
-const backendDir = resolve(import.meta.dirname, "../packages/backend");
 const limit = parseInt(process.argv[2] || "50");
+const CONVEX_URL =
+  process.env.CONVEX_URL ?? "https://amiable-marmot-44.convex.cloud";
 
 // ---- YouTube transcript fetching ----
 
@@ -139,26 +137,42 @@ function processWords(
 
 // ---- Convex helpers ----
 
-async function convexRun(fn: string, args: string) {
-  const result =
-    await $`bunx convex run --no-push ${fn} ${args}`
-      .cwd(backendDir)
-      .text();
-  return result.trim();
-}
+const CONVEX_HEADERS = {
+  "Content-Type": "application/json",
+  "Convex-Client": "actions-1.31.6",
+};
 
 async function convexQuery(fn: string, args: object) {
-  const result =
-    await $`bunx convex run --no-push ${fn} ${JSON.stringify(args)}`
-      .cwd(backendDir)
-      .text();
-  return JSON.parse(result.trim());
+  const res = await fetch(`${CONVEX_URL}/api/query`, {
+    method: "POST",
+    headers: CONVEX_HEADERS,
+    body: JSON.stringify({ path: fn, args, format: "json" }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Convex query ${fn} failed (${res.status}): ${text}`);
+  }
+  const json = await res.json() as { value: unknown; status: string };
+  if (json.status !== "success") {
+    throw new Error(`Convex query ${fn} returned status: ${json.status}`);
+  }
+  return json.value;
 }
 
 async function convexMutation(fn: string, args: object) {
-  await $`bunx convex run --no-push ${fn} ${JSON.stringify(args)}`
-    .cwd(backendDir)
-    .quiet();
+  const res = await fetch(`${CONVEX_URL}/api/mutation`, {
+    method: "POST",
+    headers: CONVEX_HEADERS,
+    body: JSON.stringify({ path: fn, args, format: "json" }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Convex mutation ${fn} failed (${res.status}): ${text}`);
+  }
+  const json = await res.json() as { status: string };
+  if (json.status !== "success") {
+    throw new Error(`Convex mutation ${fn} returned status: ${json.status}`);
+  }
 }
 
 // ---- Main ----
