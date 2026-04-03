@@ -388,10 +388,11 @@ export const getVocabStats = query({
 export const getTopWordsSimple = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, { limit }) => {
-    // Fetch all, sort in JS to avoid index issues during backfill
-    const all = await ctx.db.query("vocabWords").collect();
-    all.sort((a, b) => b.totalCount - a.totalCount);
-    return all.slice(0, limit ?? 200);
+    return await ctx.db
+      .query("vocabWords")
+      .withIndex("by_totalCount")
+      .order("desc")
+      .take(limit ?? 200);
   },
 });
 
