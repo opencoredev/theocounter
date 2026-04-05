@@ -137,6 +137,13 @@ export const checkForNewVideo = internalAction({
       `${newVideos.length} new video(s) detected: ${newVideos.map((v) => v.title).join(", ")}`,
     );
 
+    // Schedule transcript processing for new videos (delay 2 min to let
+    // YouTube generate auto-captions)
+    await ctx.scheduler.runAfter(
+      120_000,
+      internal.vocab.processUnprocessedVideos,
+    );
+
     return null;
   },
 });
