@@ -686,21 +686,15 @@ export const processUnprocessedVideos = internalAction({
             `✓ "${video.title}" — ${wordCounts.size} unique words`,
           );
         } else {
-          await ctx.runMutation(internal.vocab.saveTranscript, {
-            videoId: video.videoId,
-            status: "no_captions",
-          });
-          console.info(`✗ No captions for "${video.title}"`);
+          // Don't mark as no_captions — captions may not be generated yet.
+          // The cron will retry on the next run.
+          console.info(`✗ No captions yet for "${video.title}" — will retry`);
         }
 
-        // Small delay to avoid YouTube rate limiting
         await new Promise((resolve) => setTimeout(resolve, 1500));
       } catch (err) {
-        console.error(`Error processing ${video.videoId}:`, err);
-        await ctx.runMutation(internal.vocab.saveTranscript, {
-          videoId: video.videoId,
-          status: "failed",
-        });
+        // Don't mark as failed — will retry on next cron run
+        console.error(`Error processing ${video.videoId} — will retry:`, err);
       }
     }
 
@@ -778,7 +772,5 @@ export const backfillAllChannelVideos = internalAction({
       `Backfill complete: ${totalFetched} videos fetched, ${totalInserted} new`,
     );
 
-    await ctx.runMutation(internal.vocab.refreshVocabMeta);
   },
-});
-// force redeploy 1775240173
+}); 1775240173
