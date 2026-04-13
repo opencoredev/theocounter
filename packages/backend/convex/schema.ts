@@ -50,6 +50,7 @@ export default defineSchema({
     word: v.string(),
     totalCount: v.number(),
     videoCount: v.number(),
+    rank: v.optional(v.number()),
   })
     .index("by_word", ["word"])
     .index("by_totalCount", ["totalCount"])
@@ -62,5 +63,7 @@ export default defineSchema({
     totalUniqueWords: v.number(),
     totalWordOccurrences: v.number(),
     lastUpdatedAt: v.number(),
+    lastRankedAt: v.optional(v.number()),
+    rankRefreshQueuedAt: v.optional(v.number()),
   }),
 });

@@ -202,25 +202,12 @@ for (let i = 0; i < unprocessed.length; i++) {
   if (text) {
     const wordCounts = processWords(text);
 
-    // Ingest via public mutation (chunks of 300 to stay within limits)
-    const CHUNK = 300;
-    for (let j = 0; j < wordCounts.length; j += CHUNK) {
-      const isFirst = j === 0;
-      await convexMutation("vocab:ingestTranscript", {
-        videoId: video.videoId,
-        text: isFirst ? text : undefined,
-        status: "success",
-        wordCounts: wordCounts.slice(j, j + CHUNK),
-      });
-    }
-
-    if (wordCounts.length === 0) {
-      await convexMutation("vocab:ingestTranscript", {
-        videoId: video.videoId,
-        text,
-        status: "success",
-      });
-    }
+    await convexMutation("vocab:ingestTranscript", {
+      videoId: video.videoId,
+      text,
+      status: "success",
+      wordCounts,
+    });
 
     console.log(
       `${progress} ✓ "${video.title}" (${wordCounts.length} words)`,

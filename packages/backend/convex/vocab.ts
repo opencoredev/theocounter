@@ -4,6 +4,7 @@ import {
   internalQuery,
   mutation,
   query,
+  type MutationCtx,
 } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
@@ -123,6 +124,37 @@ const STOP_WORDS = new Set([
   "while",
   "although",
 ]);
+
+const SEARCH_RESULT_LIMIT = 50;
+const SEARCH_CANDIDATE_LIMIT = 200;
+const RANK_BATCH_SIZE = 500;
+const RANK_REFRESH_DEBOUNCE_MS = 60_000;
+
+type RankRefreshBatchResult = {
+  continueCursor: string;
+  isDone: boolean;
+  nextOffset: number;
+};
+
+async function scheduleRankRefreshIfNeeded(
+  ctx: Pick<MutationCtx, "db" | "scheduler">,
+): Promise<void> {
+  const meta = await ctx.db.query("vocabMeta").first();
+  const now = Date.now();
+
+  if (
+    meta?.rankRefreshQueuedAt !== undefined &&
+    meta.rankRefreshQueuedAt > now - RANK_REFRESH_DEBOUNCE_MS
+  ) {
+    return;
+  }
+
+  if (meta) {
+    await ctx.db.patch(meta._id, { rankRefreshQueuedAt: now });
+  }
+
+  await ctx.scheduler.runAfter(0, internal.vocab.refreshVocabRanks, {});
+}
 
 const BATCH_SIZE = 10;
 const WORD_BATCH_SIZE = 500;
@@ -371,11 +403,30 @@ export const getTopWords = query({
 export const searchWords = query({
   args: { searchTerm: v.string() },
   handler: async (ctx, { searchTerm }) => {
-    if (searchTerm.length < 2) return [];
-    return await ctx.db
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+    if (normalizedSearchTerm.length < 2) return [];
+
+    const matches = await ctx.db
       .query("vocabWords")
-      .withSearchIndex("search_word", (q) => q.search("word", searchTerm))
-      .take(50);
+      .withSearchIndex("search_word", (q) =>
+        q.search("word", normalizedSearchTerm),
+      )
+      .take(SEARCH_CANDIDATE_LIMIT);
+
+    return matches
+      .map((word) => ({
+        ...word,
+        rank: word.rank ?? null,
+      }))
+      .sort((a, b) => {
+        if (a.rank !== null && b.rank !== null && a.rank !== b.rank) {
+          return a.rank - b.rank;
+        }
+        if (a.rank !== null) return -1;
+        if (b.rank !== null) return 1;
+        return b.totalCount - a.totalCount;
+      })
+      .slice(0, SEARCH_RESULT_LIMIT);
   },
 });
 
@@ -488,6 +539,10 @@ export const ingestTranscript = mutation({
       });
     }
 
+    if (args.wordCounts?.length) {
+      await scheduleRankRefreshIfNeeded(ctx);
+    }
+
     return { ingested: true };
   },
 });
@@ -579,9 +634,41 @@ export const refreshVocabMeta = internalMutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db.query("vocabMeta").first();
 
-    if (existing && !args.incrementWords) {
-      // Just touch lastUpdatedAt without full recalculation
-      await ctx.db.patch(existing._id, { lastUpdatedAt: Date.now() });
+    if (existing && args.incrementWords === undefined) {
+      const [videos, transcripts, vocabWords] = await Promise.all([
+        ctx.db.query("videos").collect(),
+        ctx.db.query("transcripts").collect(),
+        ctx.db.query("vocabWords").collect(),
+      ]);
+
+      const uniqueVideoIds = new Set(videos.map((video) => video.videoId));
+      const processedVideoIds = new Set<string>();
+      const transcriptVideoIds = new Set<string>();
+
+      for (const transcript of transcripts) {
+        if (!uniqueVideoIds.has(transcript.videoId)) {
+          continue;
+        }
+
+        processedVideoIds.add(transcript.videoId);
+        if (transcript.status === "success") {
+          transcriptVideoIds.add(transcript.videoId);
+        }
+      }
+
+      let totalWordOccurrences = 0;
+      for (const word of vocabWords) {
+        totalWordOccurrences += word.totalCount;
+      }
+
+      await ctx.db.patch(existing._id, {
+        totalChannelVideos: uniqueVideoIds.size,
+        totalVideosProcessed: processedVideoIds.size,
+        totalVideosWithTranscripts: transcriptVideoIds.size,
+        totalUniqueWords: vocabWords.length,
+        totalWordOccurrences,
+        lastUpdatedAt: Date.now(),
+      });
       return;
     }
 
@@ -612,6 +699,52 @@ export const refreshVocabMeta = internalMutation({
       totalUniqueWords: 0,
       totalWordOccurrences: 0,
       lastUpdatedAt: Date.now(),
+    });
+  },
+});
+
+export const enqueueRankRefresh = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    await scheduleRankRefreshIfNeeded(ctx);
+  },
+});
+
+export const refreshVocabRanksBatch = internalMutation({
+  args: {
+    cursor: v.union(v.null(), v.string()),
+    offset: v.number(),
+  },
+  handler: async (ctx, { cursor, offset }) => {
+    const page = await ctx.db
+      .query("vocabWords")
+      .withIndex("by_totalCount")
+      .order("desc")
+      .paginate({ numItems: RANK_BATCH_SIZE, cursor });
+
+    for (const [index, word] of page.page.entries()) {
+      const nextRank = offset + index + 1;
+      if (word.rank === nextRank) continue;
+      await ctx.db.patch(word._id, { rank: nextRank });
+    }
+
+    return {
+      continueCursor: page.continueCursor,
+      isDone: page.isDone,
+      nextOffset: offset + page.page.length,
+    };
+  },
+});
+
+export const markRankRefreshComplete = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const meta = await ctx.db.query("vocabMeta").first();
+    if (!meta) return;
+
+    await ctx.db.patch(meta._id, {
+      lastRankedAt: Date.now(),
+      rankRefreshQueuedAt: undefined,
     });
   },
 });
@@ -698,7 +831,30 @@ export const processUnprocessedVideos = internalAction({
       }
     }
 
-    await ctx.runMutation(internal.vocab.refreshVocabMeta);
+    await ctx.runMutation(internal.vocab.refreshVocabMeta, {});
+    await ctx.runMutation(internal.vocab.enqueueRankRefresh, {});
+  },
+});
+
+export const refreshVocabRanks = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    let cursor: string | null = null;
+    let offset = 0;
+
+    while (true) {
+      const result: RankRefreshBatchResult = await ctx.runMutation(
+        internal.vocab.refreshVocabRanksBatch,
+        { cursor, offset },
+      );
+
+      cursor = result.continueCursor;
+      offset = result.nextOffset;
+
+      if (result.isDone) break;
+    }
+
+    await ctx.runMutation(internal.vocab.markRankRefreshComplete, {});
   },
 });
 

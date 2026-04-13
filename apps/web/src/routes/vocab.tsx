@@ -24,6 +24,15 @@ const WORDS_PER_NOVEL = 80_000;
 const WORDS_PER_MINUTE_SPEAKING = 150;
 const WORDS_PER_TWEET = 40;
 const WORDS_PER_PAGE = 250;
+const FALLBACK_RANK_SCAN_LIMIT = 8_000;
+
+type DisplayWord = {
+  _id: string;
+  word: string;
+  totalCount: number;
+  videoCount: number;
+  rank?: number | null;
+};
 
 function formatBigNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -31,24 +40,62 @@ function formatBigNumber(n: number): string {
   return n.toLocaleString();
 }
 
+function sortSearchResults(words: DisplayWord[]): DisplayWord[] {
+  return [...words].sort((a, b) => {
+    if (a.rank !== null && a.rank !== undefined) {
+      if (b.rank !== null && b.rank !== undefined && a.rank !== b.rank) {
+        return a.rank - b.rank;
+      }
+      if (b.rank === null || b.rank === undefined) return -1;
+    }
+
+    if (b.rank !== null && b.rank !== undefined) return 1;
+
+    return b.totalCount - a.totalCount;
+  });
+}
+
+function attachFallbackRanks(
+  words: DisplayWord[],
+  rankedWords: DisplayWord[],
+): DisplayWord[] {
+  const rankByWord = new Map(
+    rankedWords.map((word, index) => [word.word, index + 1] as const),
+  );
+
+  return sortSearchResults(
+    words.map((word) => ({
+      ...word,
+      rank: word.rank ?? rankByWord.get(word.word) ?? null,
+    })),
+  );
+}
+
 function VocabPage() {
   const [search, setSearch] = useState("");
   const stats = useQuery(api.vocab.getVocabStats);
   const topWords = useQuery(api.vocab.getTopWordsSimple, { limit: 200 });
-  // DEBUG: test if any Convex query works from this page
-  const latestVideo = useQuery(api.videos.getLatestVideo);
-  if (typeof window !== "undefined") {
-    console.log("[VOCAB_TEST] video=" + (latestVideo?.title ?? "loading") + " vocabWords=" + (topWords === undefined ? "loading" : topWords.length));
-  }
-
+  const hasActiveSearch = search.trim().length >= 2;
   const searchResults = useQuery(
     api.vocab.searchWords,
-    search.length >= 2 ? { searchTerm: search } : "skip",
+    hasActiveSearch ? { searchTerm: search } : "skip",
   );
+  const needsRankFallback =
+    hasActiveSearch && searchResults?.some((word) => word.rank == null);
+  const fallbackRankedWords = useQuery(
+    api.vocab.getTopWordsSimple,
+    needsRankFallback ? { limit: FALLBACK_RANK_SCAN_LIMIT } : "skip",
+  );
+  const isSearchLoading =
+    hasActiveSearch &&
+    (searchResults === undefined ||
+      (needsRankFallback && fallbackRankedWords === undefined));
 
-  const displayWords =
-    search.length >= 2
-      ? [...(searchResults ?? [])].sort((a, b) => b.totalCount - a.totalCount)
+  const displayWords: DisplayWord[] =
+    hasActiveSearch
+      ? needsRankFallback
+        ? attachFallbackRanks(searchResults ?? [], fallbackRankedWords ?? [])
+        : sortSearchResults(searchResults ?? [])
       : (topWords ?? []);
 
   if (topWords === undefined) return <Skeleton />;
@@ -67,7 +114,7 @@ function VocabPage() {
   return (
     <div className="flex-1 px-6 sm:px-10 py-8 sm:py-12 max-w-3xl mx-auto w-full">
       {/* Top word highlight */}
-      {topWord && !search && (
+      {topWord && !hasActiveSearch && (
         <div className="mb-8 border border-primary/20 bg-primary/[0.04] rounded-2xl p-6 sm:p-8">
           <p className="text-xs font-mono text-primary/60 tracking-widest uppercase mb-3">
             Most said word
@@ -92,7 +139,7 @@ function VocabPage() {
       )}
 
       {/* Fun comparisons */}
-      {stats && estimatedTotalWords > 0 && !search && (
+      {stats && estimatedTotalWords > 0 && !hasActiveSearch && (
         <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <ComparisonCard
             value={novelEquivalent.toFixed(1)}
@@ -161,10 +208,14 @@ function VocabPage() {
       </p>
 
       {/* Word table */}
-      {displayWords.length === 0 ? (
+      {isSearchLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <p className="text-sm font-mono text-white/30">Searching...</p>
+        </div>
+      ) : displayWords.length === 0 ? (
         <div className="flex items-center justify-center py-16">
           <p className="text-sm font-mono text-white/30">
-            {search ? "No words found." : "No vocab data yet."}
+            {hasActiveSearch ? "No words found." : "No vocab data yet."}
           </p>
         </div>
       ) : (
@@ -189,23 +240,23 @@ function VocabPage() {
                 key={word._id}
                 className={cn(
                   "grid grid-cols-[2.5rem_1fr_5rem_4rem] gap-0 px-4 py-3 border-b border-white/[0.04] last:border-0 transition-colors hover:bg-white/[0.02]",
-                  i === 0 && !search && "bg-primary/[0.03]",
+                  i === 0 && !hasActiveSearch && "bg-primary/[0.03]",
                 )}
               >
                 <span
                   className={cn(
                     "font-mono text-xs tabular-nums pt-px",
-                    i === 0 && !search
+                    i === 0 && !hasActiveSearch
                       ? "text-primary/60 font-bold"
                       : "text-white/20",
                   )}
                 >
-                  {search ? "\u2014" : i + 1}
+                  {hasActiveSearch ? (word.rank ?? "\u2014") : i + 1}
                 </span>
                 <span
                   className={cn(
                     "font-mono text-sm font-bold",
-                    i === 0 && !search ? "text-primary" : "text-white/80",
+                    i === 0 && !hasActiveSearch ? "text-primary" : "text-white/80",
                   )}
                 >
                   {word.word}
@@ -220,7 +271,7 @@ function VocabPage() {
             ))}
           </div>
 
-          {!search && displayWords.length >= 200 && (
+          {!hasActiveSearch && displayWords.length >= 200 && (
             <p className="text-center mt-4 text-xs font-mono text-white/15 tracking-widest">
               Showing top 200 words
             </p>

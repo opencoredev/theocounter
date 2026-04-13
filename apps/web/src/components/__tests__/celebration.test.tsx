@@ -17,6 +17,7 @@ const mockVideo = {
   thumbnailUrl: "https://example.com/thumb.jpg",
   publishedAt: 1_000_000_000,
 };
+const noop = () => {};
 
 function stubLocalStorage(store: Record<string, string> = {}) {
   const storage: Record<string, string> = { ...store };
@@ -43,7 +44,11 @@ describe("Celebration", () => {
   it("does not fire confetti when lastSeenVideoId matches", () => {
     stubLocalStorage({ lastSeenVideoId: mockVideo.videoId });
     render(
-      <Celebration video={mockVideo} droughtDurationMs={86_400_000} />,
+      <Celebration
+        video={mockVideo}
+        droughtDurationMs={86_400_000}
+        onShowCounter={noop}
+      />,
     );
     expect(mockConfetti).not.toHaveBeenCalled();
   });
@@ -51,7 +56,11 @@ describe("Celebration", () => {
   it("fires confetti when lastSeenVideoId differs", () => {
     stubLocalStorage({ lastSeenVideoId: "old-video" });
     render(
-      <Celebration video={mockVideo} droughtDurationMs={86_400_000} />,
+      <Celebration
+        video={mockVideo}
+        droughtDurationMs={86_400_000}
+        onShowCounter={noop}
+      />,
     );
     expect(mockConfetti).toHaveBeenCalled();
   });
@@ -59,7 +68,11 @@ describe("Celebration", () => {
   it("renders YouTube embed with correct URL", () => {
     stubLocalStorage({ lastSeenVideoId: mockVideo.videoId });
     const { container } = render(
-      <Celebration video={mockVideo} droughtDurationMs={86_400_000} />,
+      <Celebration
+        video={mockVideo}
+        droughtDurationMs={86_400_000}
+        onShowCounter={noop}
+      />,
     );
     const iframe = container.querySelector("iframe");
     expect(iframe).not.toBeNull();
@@ -71,14 +84,24 @@ describe("Celebration", () => {
   it("formats 86400000ms (1 day) as 'After 1 day'", () => {
     stubLocalStorage({ lastSeenVideoId: mockVideo.videoId });
     render(
-      <Celebration video={mockVideo} droughtDurationMs={86_400_000} />,
+      <Celebration
+        video={mockVideo}
+        droughtDurationMs={86_400_000}
+        onShowCounter={noop}
+      />,
     );
     expect(screen.queryByText("After 1 day")).not.toBeNull();
   });
 
   it("shows 'A new video!' when droughtDurationMs is 0", () => {
     stubLocalStorage({ lastSeenVideoId: mockVideo.videoId });
-    render(<Celebration video={mockVideo} droughtDurationMs={0} />);
+    render(
+      <Celebration
+        video={mockVideo}
+        droughtDurationMs={0}
+        onShowCounter={noop}
+      />,
+    );
     expect(screen.queryByText("A new video!")).not.toBeNull();
   });
 });
